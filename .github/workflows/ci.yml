@@ -1,0 +1,28 @@
+name: Build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+
+      - name: Setup Scala
+        uses: japgolly/setup-everything-scala@v1.0
+
+      - name: Check code format
+        run: sbt scalafmtCheckAll
+
+      - name: Compile
+        run: sbt +compile
+
+      - name: Run tests
+        run: sbt +test
