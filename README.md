@@ -45,4 +45,4 @@ It is recommended to turn these warnings into errors when building the project i
 
 TODO:
 - Add tests.
-- Consider adding a wart for `Option#get`
+
