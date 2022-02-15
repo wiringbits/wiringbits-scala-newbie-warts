@@ -6,8 +6,8 @@ object UnsafeRunSync extends WartTraverser {
   private val message =
     """unsafeRunSync is a pretty dangerous method for applications.
       |Avoid it unless you know what you are doing, in which case, you can
-      |surpress the warning by annotating your code with:
-      |@SurpressWarnings(Array("net.wiringbits.warts.UnsafeRunSync"))
+      |supress the warning by annotating your code with:
+      |@SuppressWarnings(Array("net.wiringbits.warts.UnsafeRunSync"))
       |""".stripMargin
 
   def apply(u: WartUniverse): u.Traverser = {
