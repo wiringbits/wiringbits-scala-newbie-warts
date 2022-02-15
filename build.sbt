@@ -1,14 +1,16 @@
 ThisBuild / versionScheme := Some("early-semver")
-// For all Sonatype accounts created on or after February 2021
-ThisBuild / sonatypeCredentialHost := "s01.oss.sonatype.org"
 ThisBuild / organization := "net.wiringbits"
 ThisBuild / scalaVersion := "2.13.8"
 
+// For all Sonatype accounts created on or after February 2021
+ThisBuild / sonatypeCredentialHost := "s01.oss.sonatype.org"
+ThisBuild / sonatypeRepository := "https://s01.oss.sonatype.org/service/local"
+
 inThisBuild(
   List(
-    description := "A collection of WartRemover warts used by Wiringbits",
+    description := "A collection of WartRemover warts for Scala newbies used by Wiringbits",
     homepage := Some(
-      url("https://github.com/wiringbits/wiringbits-scala-warts")
+      url("https://github.com/wiringbits/wiringbits-scala-newbie-warts")
     ),
     licenses := List(
       "MIT" -> url("https://www.opensource.org/licenses/mit-license.html")
