@@ -30,7 +30,8 @@ lazy val commonSettings = Def.settings(
   scalaVersion := "2.13.8",
   organization := "net.wiringbits",
   libraryDependencies ++= Seq(
-    "org.wartremover" % "wartremover" % wartremover.Wart.PluginVersion cross CrossVersion.full
+    "org.wartremover" % "wartremover" % wartremover.Wart.PluginVersion cross CrossVersion.full,
+    "org.scalatest" %% "scalatest" % "3.2.11" % "test"
   )
 )
 

@@ -40,9 +40,3 @@ wartremoverWarnings += Wart.custom("net.wiringbits.warts.UnsafeRunSync")
 ```
 
 It is recommended to turn these warnings into errors when building the project in the CI.
-
-## Future
-
-TODO:
-- Add tests.
-

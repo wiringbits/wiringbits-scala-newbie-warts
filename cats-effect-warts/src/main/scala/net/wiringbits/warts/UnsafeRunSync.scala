@@ -3,7 +3,7 @@ package net.wiringbits.warts
 import org.wartremover.{WartTraverser, WartUniverse}
 
 object UnsafeRunSync extends WartTraverser {
-  private val message =
+  private[warts] val message =
     """unsafeRunSync is a pretty dangerous method for applications.
       |Avoid it unless you know what you are doing, in which case, you can
       |supress the warning by annotating your code with:
