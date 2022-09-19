@@ -1,15 +1,12 @@
 package net.wiringbits.warts
 
 import cats.effect.unsafe.implicits.global
-import cats.effect.{IO, unsafe}
+import cats.effect.IO
 import org.scalatest.funsuite.AnyFunSuite
 import org.wartremover.test.WartTestTraverser
 
 class UnsafeRunSyncSpec extends AnyFunSuite with CustomAssertions {
   test("unsafeRunSync from non IO classes is allowed") {
-    class CustomIO[T](x: T) {
-      def unsafeRunSync()(implicit runtime: unsafe.IORuntime): T = x
-    }
     val result = WartTestTraverser(UnsafeRunSync) {
       new CustomIO("works").unsafeRunSync()
     }
