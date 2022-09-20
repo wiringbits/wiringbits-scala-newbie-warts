@@ -1,6 +1,7 @@
 package net.wiringbits.warts
 
 import org.wartremover.{WartTraverser, WartUniverse}
+
 sealed abstract class UnsafeWartTraverser(unsafeMethodName: String, wartClassName: String) extends WartTraverser {
   private[warts] val message =
     s"""$unsafeMethodName is a pretty dangerous method for applications.
