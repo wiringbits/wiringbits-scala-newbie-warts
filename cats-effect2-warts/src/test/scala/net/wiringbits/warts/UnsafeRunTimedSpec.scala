@@ -1,7 +1,6 @@
 package net.wiringbits.warts
 
 import cats.effect.IO
-import cats.effect.unsafe.implicits.global
 import org.scalatest.funsuite.AnyFunSuite
 import org.wartremover.test.WartTestTraverser
 
