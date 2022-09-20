@@ -18,11 +18,11 @@ For example, invoking `UnsafeRunSync` from cats-effect can lead to pretty bad ap
 - `net.wiringbits.warts.UnsafeToFuture`: Emits a warning when `unsafeToFuture` is invoked.
 
 ### Cats Effect 3 Warts
+- `net.wiringbits.warts.UnsafeRunSync`: Emits a warning when `unsafeRunSync` is invoked.
 - `net.wiringbits.warts.UnsafeRunAndForget`: Emits a warning when `unsafeRunAndForget` is invoked.
 - `net.wiringbits.warts.UnsafeRunAsync`: Emits a warning when `unsafeRunAsync` is invoked.
 - `net.wiringbits.warts.UnsafeRunAsyncOutcome`: Emits a warning when `unsafeRunAsyncOutcome` is invoked.
 - `net.wiringbits.warts.UnsafeRunCancelable`: Emits a warning when `unsafeRunCancelable` is invoked.
-- `net.wiringbits.warts.UnsafeRunSync`: Emits a warning when `unsafeRunSync` is invoked.
 - `net.wiringbits.warts.UnsafeRunTimed`: Emits a warning when `unsafeRunTimed` is invoked.
 - `net.wiringbits.warts.UnsafeToFuture`: Emits a warning when `unsafeToFuture` is invoked.
 - `net.wiringbits.warts.UnsafeToFutureCancelable`: Emits a warning when `unsafeToFutureCancelable` is invoked.
