@@ -6,9 +6,6 @@ import org.wartremover.test.WartTestTraverser
 
 class UnsafeRunSyncSpec extends AnyFunSuite with CustomAssertions {
   test("unsafeRunSync from non IO classes is allowed") {
-    class CustomIO[T](x: T) {
-      def unsafeRunSync(): T = x
-    }
     val result = WartTestTraverser(UnsafeRunSync) {
       new CustomIO("works").unsafeRunSync()
     }

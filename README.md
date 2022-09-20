@@ -8,8 +8,24 @@ For example, invoking `UnsafeRunSync` from cats-effect can lead to pretty bad ap
 
 ## What's included
 
-Included warts:
-- `net.wiringbits.warts.UnsafeRunSync`: Emits a warning when `UnsafeRunSync` from cats-effect is invoked (available for cats-effect 2 and 3).
+
+### Cats Effect 2 Warts
+- `net.wiringbits.warts.UnsafeRunSync`: Emits a warning when `unsafeRunSync` is invoked.
+- `net.wiringbits.warts.UnsafeRunAsyncAndForget`: Emits a warning when `unsafeRunAsyncAndForget` is invoked.
+- `net.wiringbits.warts.UnsafeRunAsync`: Emits a warning when `unsafeRunAsync` is invoked.
+- `net.wiringbits.warts.UnsafeRunCancelable`: Emits a warning when `unsafeRunCancelable` is invoked.
+- `net.wiringbits.warts.UnsafeRunTimed`: Emits a warning when `unsafeRunTimed` is invoked.
+- `net.wiringbits.warts.UnsafeToFuture`: Emits a warning when `unsafeToFuture` is invoked.
+
+### Cats Effect 3 Warts
+- `net.wiringbits.warts.UnsafeRunSync`: Emits a warning when `unsafeRunSync` is invoked.
+- `net.wiringbits.warts.UnsafeRunAndForget`: Emits a warning when `unsafeRunAndForget` is invoked.
+- `net.wiringbits.warts.UnsafeRunAsync`: Emits a warning when `unsafeRunAsync` is invoked.
+- `net.wiringbits.warts.UnsafeRunAsyncOutcome`: Emits a warning when `unsafeRunAsyncOutcome` is invoked.
+- `net.wiringbits.warts.UnsafeRunCancelable`: Emits a warning when `unsafeRunCancelable` is invoked.
+- `net.wiringbits.warts.UnsafeRunTimed`: Emits a warning when `unsafeRunTimed` is invoked.
+- `net.wiringbits.warts.UnsafeToFuture`: Emits a warning when `unsafeToFuture` is invoked.
+- `net.wiringbits.warts.UnsafeToFutureCancelable`: Emits a warning when `unsafeToFutureCancelable` is invoked.
 
 ## Usage
 
@@ -37,6 +53,11 @@ wartremoverClasspaths ++= {
 
 ```scala
 wartremoverWarnings += Wart.custom("net.wiringbits.warts.UnsafeRunSync")
+```
+
+- Enable all unsafe warts:
+```scala
+wartremoverWarnings += Wart.custom("net.wiringbits.warts.Unsafe")
 ```
 
 It is recommended to turn these warnings into errors when building the project in the CI.
