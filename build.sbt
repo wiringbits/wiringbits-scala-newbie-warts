@@ -1,6 +1,6 @@
 ThisBuild / versionScheme := Some("early-semver")
 ThisBuild / organization := "net.wiringbits"
-ThisBuild / scalaVersion := "2.13.8"
+ThisBuild / scalaVersion := "3.4.2"
 
 // For all Sonatype accounts created on or after February 2021
 ThisBuild / sonatypeCredentialHost := "s01.oss.sonatype.org"
