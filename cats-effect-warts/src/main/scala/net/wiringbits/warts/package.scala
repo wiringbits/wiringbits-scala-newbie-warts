@@ -11,23 +11,23 @@ sealed abstract class UnsafeWartTraverser(unsafeMethodName: String, wartClassNam
        |""".stripMargin
 
   def apply(u: WartUniverse): u.Traverser = {
-    import u.universe._
+    new u.Traverser(this) {
+      import q.reflect.*
 
-    val targetMethodName: TermName = TermName(unsafeMethodName)
-    val targetSymbol = typeOf[cats.effect.IO[Any]]
-    val targetMethod = targetSymbol.member(targetMethodName)
-    require(targetMethod != NoSymbol)
+      val targetMethodName: String = unsafeMethodName
+      val targetSymbol = TypeRepr.of[cats.effect.IO[Any]].typeSymbol
+      val targetMethod = targetSymbol.methodMember(targetMethodName).headOption.getOrElse {
+        throw new IllegalArgumentException(s"Method $unsafeMethodName not found in cats.effect.IO")
+      }
 
-    new Traverser {
-      override def traverse(tree: Tree): Unit = {
+      override def traverseTree(tree: Tree)(owner: Symbol): Unit = {
         tree match {
-          // Ignore trees marked by SuppressWarnings
-          case t if hasWartAnnotation(u)(t) => ()
+          case _ if hasWartAnnotation(tree) => ()
           case Apply(Apply(method, _), _) if method.symbol == targetMethod =>
-            error(u)(tree.pos, message)
-            super.traverse(tree)
-
-          case _ => super.traverse(tree)
+            error(tree.pos, message)
+            super.traverseTree(tree)(owner)
+          case _ =>
+            super.traverseTree(tree)(owner)
         }
       }
     }

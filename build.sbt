@@ -1,6 +1,6 @@
 ThisBuild / versionScheme := Some("early-semver")
 ThisBuild / organization := "net.wiringbits"
-ThisBuild / scalaVersion := "2.13.8"
+ThisBuild / scalaVersion := "3.3.0"
 
 // For all Sonatype accounts created on or after February 2021
 ThisBuild / sonatypeCredentialHost := "s01.oss.sonatype.org"
@@ -27,11 +27,11 @@ inThisBuild(
 )
 
 lazy val commonSettings = Def.settings(
-  scalaVersion := "2.13.8",
+  scalaVersion := "3.3.0",
   organization := "net.wiringbits",
   libraryDependencies ++= Seq(
     "org.wartremover" % "wartremover" % wartremover.Wart.PluginVersion cross CrossVersion.full,
-    "org.scalatest" %% "scalatest" % "3.2.11" % "test"
+    "org.scalatest" %% "scalatest" % "3.2.16" % "test"
   )
 )
 
@@ -45,20 +45,9 @@ lazy val catsEffectWarts = project
     )
   )
 
-lazy val catsEffect2Warts = project
-  .in(file("cats-effect2-warts"))
-  .settings(
-    commonSettings,
-    name := "cats-effect2-warts",
-    libraryDependencies ++= Seq(
-      "org.typelevel" %% "cats-effect" % "2.5.3"
-    )
-  )
-
 lazy val root = (project in file("."))
   .aggregate(
-    catsEffectWarts,
-    catsEffect2Warts
+    catsEffectWarts
   )
   .settings(
     name := "wiringbits-scala-warts",
