@@ -31,7 +31,7 @@ lazy val commonSettings = Def.settings(
   organization := "net.wiringbits",
   libraryDependencies ++= Seq(
     "org.wartremover" % "wartremover" % wartremover.Wart.PluginVersion cross CrossVersion.full,
-    "org.scalatest" %% "scalatest" % "3.2.16" % "test"
+    "org.scalatest" %% "scalatest" % "3.2.18" % "test"
   )
 )
 
@@ -41,7 +41,7 @@ lazy val catsEffectWarts = project
     commonSettings,
     name := "cats-effect-warts",
     libraryDependencies ++= Seq(
-      "org.typelevel" %% "cats-effect" % "3.3.5"
+      "org.typelevel" %% "cats-effect" % "3.5.4"
     )
   )
 
