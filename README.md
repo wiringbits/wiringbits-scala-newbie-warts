@@ -34,7 +34,7 @@ lazy val wiringbitsWarts = List(
   "cats-effect-warts", // cats-effect 3 only
 )
 libraryDependencies ++= wiringbitsWarts.map { customWart =>
-  "net.wiringbits" %% customWart % "0.4.0" // pick the latest version
+  "net.wiringbits" %% customWart % "0.4.2" // pick the latest version
 }
 wartremoverClasspaths ++= {
   (Compile / dependencyClasspath).value.files
