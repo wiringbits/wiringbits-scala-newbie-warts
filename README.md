@@ -10,12 +10,8 @@ For example, invoking `UnsafeRunSync` from cats-effect can lead to pretty bad ap
 
 
 ### Cats Effect 2 Warts
-- `net.wiringbits.warts.UnsafeRunSync`: Emits a warning when `unsafeRunSync` is invoked.
-- `net.wiringbits.warts.UnsafeRunAsyncAndForget`: Emits a warning when `unsafeRunAsyncAndForget` is invoked.
-- `net.wiringbits.warts.UnsafeRunAsync`: Emits a warning when `unsafeRunAsync` is invoked.
-- `net.wiringbits.warts.UnsafeRunCancelable`: Emits a warning when `unsafeRunCancelable` is invoked.
-- `net.wiringbits.warts.UnsafeRunTimed`: Emits a warning when `unsafeRunTimed` is invoked.
-- `net.wiringbits.warts.UnsafeToFuture`: Emits a warning when `unsafeToFuture` is invoked.
+
+A previous version is required, check [v0.3.0](https://github.com/wiringbits/wiringbits-scala-newbie-warts/tree/v0.3.0)
 
 ### Cats Effect 3 Warts
 - `net.wiringbits.warts.UnsafeRunSync`: Emits a warning when `unsafeRunSync` is invoked.
@@ -35,11 +31,10 @@ For example, invoking `UnsafeRunSync` from cats-effect can lead to pretty bad ap
 ```scala
 // choose the modules you are interested in
 lazy val wiringbitsWarts = List(
-  "cats-effect-warts", // cats-effect 3
-  "cats-effect2-warts" // cats-effect 2
+  "cats-effect-warts", // cats-effect 3 only
 )
 libraryDependencies ++= wiringbitsWarts.map { customWart =>
-  "net.wiringbits" %% customWart % "0.2.0" // pick the latest version
+  "net.wiringbits" %% customWart % "0.4.0" // pick the latest version
 }
 wartremoverClasspaths ++= {
   (Compile / dependencyClasspath).value.files
