@@ -2,10 +2,6 @@ ThisBuild / versionScheme := Some("early-semver")
 ThisBuild / organization := "net.wiringbits"
 ThisBuild / scalaVersion := "3.3.0"
 
-// For all Sonatype accounts created on or after February 2021
-ThisBuild / sonatypeCredentialHost := "s01.oss.sonatype.org"
-ThisBuild / sonatypeRepository := "https://s01.oss.sonatype.org/service/local"
-
 inThisBuild(
   List(
     description := "A collection of WartRemover warts for Scala newbies used by Wiringbits",
