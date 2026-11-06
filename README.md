@@ -23,6 +23,9 @@ A previous version is required, check [v0.3.0](https://github.com/wiringbits/wir
 - `net.wiringbits.warts.UnsafeToFuture`: Emits a warning when `unsafeToFuture` is invoked.
 - `net.wiringbits.warts.UnsafeToFutureCancelable`: Emits a warning when `unsafeToFutureCancelable` is invoked.
 
+### Core Warts
+- `net.wiringbits.warts.NamedArguments`: Emits a warning when a call passes positional arguments for two or more parameters that share the same type.
+
 ## Usage
 
 - Be sure to use [wartremover](https://www.wartremover.org) in your project.
@@ -32,6 +35,7 @@ A previous version is required, check [v0.3.0](https://github.com/wiringbits/wir
 // choose the modules you are interested in
 lazy val wiringbitsWarts = List(
   "cats-effect-warts", // cats-effect 3 only
+  "core-warts", // plain Scala, no extra dependencies
 )
 libraryDependencies ++= wiringbitsWarts.map { customWart =>
   "net.wiringbits" %% customWart % "0.4.3" // pick the latest version

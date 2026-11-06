@@ -41,9 +41,17 @@ lazy val catsEffectWarts = project
     )
   )
 
+lazy val coreWarts = project
+  .in(file("core-warts"))
+  .settings(
+    commonSettings,
+    name := "core-warts"
+  )
+
 lazy val root = (project in file("."))
   .aggregate(
-    catsEffectWarts
+    catsEffectWarts,
+    coreWarts
   )
   .settings(
     name := "wiringbits-scala-warts",
