@@ -40,8 +40,8 @@ class NamedArgumentsSpec extends AnyFunSuite with CustomAssertions {
 
   test("naming only the same typed arguments is enough even if distinct typed ones stay positional") {
     val result = WartTestTraverser(NamedArguments) {
-      def f(a: String, flag: Boolean, b: String): Unit = ()
-      f(a = "a", flag = true, b = "b")
+      def f(flag: Boolean, a: String, b: String): Unit = ()
+      f(true, a = "a", b = "b")
     }
     assertEmpty(result)
   }

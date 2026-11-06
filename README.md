@@ -24,7 +24,7 @@ A previous version is required, check [v0.3.0](https://github.com/wiringbits/wir
 - `net.wiringbits.warts.UnsafeToFutureCancelable`: Emits a warning when `unsafeToFutureCancelable` is invoked.
 
 ### Core Warts
-- `net.wiringbits.warts.NamedArguments`: Emits a warning at a call site when the invoked method, function or constructor declares two or more parameters sharing the same type (anywhere in a single parameter list, not only adjacent ones) and the arguments for those same typed parameters are passed positionally instead of by name. Two positional arguments of the same type can be swapped without a compile error, so requiring names (for example `merge(survivorId = a, loserId = b)` instead of `merge(a, b)`) turns an accidental swap into a visible diff. Naming just the same typed arguments is enough to satisfy it; using named arguments is always acceptable. It does not flag calls where every parameter has a distinct type, callees with fewer than two parameters of any one type, single argument calls, operator calls, varargs, or calls into the Scala and Java standard libraries (such as `map`, `zip` and `fold`).
+- `net.wiringbits.warts.NamedArguments`: Emits a warning when a call passes positional arguments for two or more parameters that share the same type.
 
 ## Usage
 
