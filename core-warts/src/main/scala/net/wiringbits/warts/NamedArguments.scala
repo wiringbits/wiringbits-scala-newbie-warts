@@ -20,11 +20,11 @@ import org.wartremover.{WartTraverser, WartUniverse}
   * combinators such as map, zip and fold where naming is not idiomatic).
   *
   * Known limitations, where the wart deliberately stays silent to avoid false positives: calls that rely on default
-  * argument values (the compiler fills omitted arguments positionally with references to synthetic default getters, so
-  * such calls are skipped). Calls inside compiler generated methods, such as the apply and copy of a case class with
-  * same typed fields, are skipped too, while user written calls to those methods are still checked. Overloads are
-  * handled correctly because the resolved method type is inspected. Each parameter list of a curried or multi parameter
-  * list method is checked independently.
+  * argument values (the compiler fills omitted arguments positionally, with no source span of their own, so such calls
+  * are skipped). Calls inside compiler generated methods, such as the apply and copy of a case class with same typed
+  * fields, are skipped too, while user written calls to those methods are still checked. Overloads are handled
+  * correctly because the resolved method type is inspected. Each parameter list of a curried or multi parameter list
+  * method is checked independently.
   */
 object NamedArguments extends WartTraverser {
   private[warts] val message =
@@ -59,9 +59,14 @@ object NamedArguments extends WartTraverser {
         case _ => true
       }
 
-      // Omitted arguments filled from default values show up positionally as references to synthetic getters.
-      private def usesDefaultArguments(args: List[Term]): Boolean =
-        args.exists(_.symbol.name.contains("$default$"))
+      // Omitted arguments filled from default values show up positionally, either as references to synthetic default
+      // getters or, when the compiler lifts the arguments into local vals (named arguments out of declaration order), as
+      // references to those vals. Neither carries a source span of its own: they are zero width or sit on the callee.
+      private def isDefaultArgument(fun: Term, arg: Term): Boolean =
+        arg.symbol.name.contains("$default$") || arg.pos.start == arg.pos.end || arg.pos.end <= fun.pos.end
+
+      private def usesDefaultArguments(fun: Term, args: List[Term]): Boolean =
+        args.exists(isDefaultArgument(fun, _))
 
       private def isStandardLibraryOwner(sym: Symbol): Boolean = {
         val owner = sym.maybeOwner
@@ -96,7 +101,7 @@ object NamedArguments extends WartTraverser {
 
         if (name.isEmpty || isSymbolicOrOperator(name)) false
         else if (isStandardLibraryOwner(sym)) false
-        else if (usesDefaultArguments(args)) false
+        else if (usesDefaultArguments(fun, args)) false
         else
           fun.tpe.widen match {
             case mt: MethodType =>
