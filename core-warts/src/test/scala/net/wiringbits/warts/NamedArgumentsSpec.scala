@@ -101,6 +101,62 @@ class NamedArgumentsSpec extends AnyFunSuite with CustomAssertions {
     assertEmpty(result)
   }
 
+  test("declaring a case class with same typed fields is not flagged") {
+    val result = WartTestTraverser(NamedArguments) {
+      case class Example(a: String, b: String)
+      case class Ids(x: java.util.UUID, y: java.util.UUID, amount: BigDecimal)
+    }
+    assertEmpty(result)
+  }
+
+  test("a case class apply with same typed arguments passed positionally is flagged") {
+    val result = WartTestTraverser(NamedArguments) {
+      case class Example(a: String, b: String)
+      Example("x", "y")
+    }
+    assertErrors(result)(errorMessage, 1)
+  }
+
+  test("a case class constructor with same typed arguments passed positionally is flagged") {
+    val result = WartTestTraverser(NamedArguments) {
+      case class Example(a: String, b: String)
+      new Example("x", "y")
+    }
+    assertErrors(result)(errorMessage, 1)
+  }
+
+  test("a case class apply with same typed arguments passed by name is not flagged") {
+    val result = WartTestTraverser(NamedArguments) {
+      case class Example(a: String, b: String)
+      Example(a = "x", b = "y")
+    }
+    assertEmpty(result)
+  }
+
+  test("same typed arguments passed positionally inside a lambda are flagged") {
+    val result = WartTestTraverser(NamedArguments) {
+      def merge(survivorId: String, loserId: String): Unit = ()
+      List("a").foreach(x => merge(x, "b"))
+    }
+    assertErrors(result)(errorMessage, 1)
+  }
+
+  test("same typed arguments passed positionally in a pattern definition are flagged") {
+    val result = WartTestTraverser(NamedArguments) {
+      def pair(a: String, b: String): (String, String) = (a, b)
+      val (x, y) = pair("a", "b")
+    }
+    assertErrors(result)(errorMessage, 1)
+  }
+
+  test("same typed arguments passed positionally in a default value are flagged") {
+    val result = WartTestTraverser(NamedArguments) {
+      class Point(x: Int, y: Int)
+      def f(p: Point = new Point(1, 2)): Unit = ()
+    }
+    assertErrors(result)(errorMessage, 1)
+  }
+
   test("obeys SuppressWarnings") {
     val result = WartTestTraverser(NamedArguments) {
       @SuppressWarnings(Array("net.wiringbits.warts.NamedArguments"))
