@@ -1,6 +1,6 @@
 ThisBuild / versionScheme := Some("early-semver")
 ThisBuild / organization := "net.wiringbits"
-ThisBuild / scalaVersion := "3.3.0"
+ThisBuild / scalaVersion := "3.3.9"
 
 inThisBuild(
   List(
@@ -23,11 +23,11 @@ inThisBuild(
 )
 
 lazy val commonSettings = Def.settings(
-  scalaVersion := "3.3.0",
+  scalaVersion := "3.3.9",
   organization := "net.wiringbits",
   libraryDependencies ++= Seq(
     "org.wartremover" % "wartremover" % wartremover.Wart.PluginVersion cross CrossVersion.full,
-    "org.scalatest" %% "scalatest" % "3.2.18" % "test"
+    "org.scalatest" %% "scalatest" % "3.2.20" % "test"
   )
 )
 
@@ -37,7 +37,7 @@ lazy val catsEffectWarts = project
     commonSettings,
     name := "cats-effect-warts",
     libraryDependencies ++= Seq(
-      "org.typelevel" %% "cats-effect" % "3.5.4"
+      "org.typelevel" %% "cats-effect" % "3.7.1"
     )
   )
 

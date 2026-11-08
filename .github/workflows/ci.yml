@@ -13,10 +13,24 @@ jobs:
 
     steps:
       - name: checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v7
 
-      - name: Setup Scala
-        uses: japgolly/setup-everything-scala@v1.0
+      - name: Setup JDK
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      # The sbt launcher comes from Maven Central, which avoids depending on GitHub release downloads.
+      # It reads project/build.properties to fetch the sbt version used by the build.
+      - name: Setup sbt
+        run: |
+          mkdir -p "$HOME/sbt/bin"
+          curl -fsSL --retry 5 -o "$HOME/sbt/bin/sbt-launch.jar" \
+            https://repo1.maven.org/maven2/org/scala-sbt/sbt-launch/1.13.1/sbt-launch-1.13.1.jar
+          printf '#!/bin/sh\nexec java -Xss4m -jar "%s" "$@"\n' "$HOME/sbt/bin/sbt-launch.jar" > "$HOME/sbt/bin/sbt"
+          chmod +x "$HOME/sbt/bin/sbt"
+          echo "$HOME/sbt/bin" >> "$GITHUB_PATH"
 
       - name: Check code format
         run: sbt scalafmtCheckAll
