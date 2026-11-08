@@ -38,7 +38,7 @@ lazy val wiringbitsWarts = List(
   "core-warts", // plain Scala, no extra dependencies
 )
 libraryDependencies ++= wiringbitsWarts.map { customWart =>
-  "net.wiringbits" %% customWart % "0.4.3" // pick the latest version
+  "net.wiringbits" %% customWart % "0.5.0" // pick the latest version
 }
 wartremoverClasspaths ++= {
   (Compile / dependencyClasspath).value.files
