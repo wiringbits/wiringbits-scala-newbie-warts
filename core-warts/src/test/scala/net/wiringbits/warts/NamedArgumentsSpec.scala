@@ -197,6 +197,27 @@ class NamedArgumentsSpec extends AnyFunSuite with CustomAssertions {
     assertErrors(result)(errorMessage, 1)
   }
 
+  test("a Scala method on an object with same typed arguments passed positionally is flagged") {
+    val result = WartTestTraverser(NamedArguments) {
+      object ScalaApi {
+        def transfer(from: String, to: String): Unit = ()
+      }
+      ScalaApi.transfer("alice", "bob")
+    }
+    assertErrors(result)(errorMessage, 1)
+  }
+
+  test("Java defined methods and constructors with same typed arguments are not flagged") {
+    val result = WartTestTraverser(NamedArguments) {
+      JavaApi.transfer("alice", "bob")
+      new JavaApi("alice", "bob")
+      val m: Int = Math.max(1, 2)
+      val s: String = "foo".replace("o", "a")
+      new java.io.File("parent", "child")
+    }
+    assertEmpty(result)
+  }
+
   test("obeys SuppressWarnings") {
     val result = WartTestTraverser(NamedArguments) {
       @SuppressWarnings(Array("net.wiringbits.warts.NamedArguments"))

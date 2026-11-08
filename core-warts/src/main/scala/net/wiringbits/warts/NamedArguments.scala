@@ -17,7 +17,8 @@ import org.wartremover.{WartTraverser, WartUniverse}
   * The wart does not flag: calls where every parameter has a distinct type, callees with fewer than two parameters of
   * any one type, single argument calls, operator/symbolic calls, varargs and calls whose owner is the Scala or Java
   * standard library (which also excludes applying a function value, whose owner is scala.FunctionN, and ordinary
-  * combinators such as map, zip and fold where naming is not idiomatic).
+  * combinators such as map, zip and fold where naming is not idiomatic). Java defined methods and constructors are not
+  * flagged either, their parameters have no names in bytecode so they cannot be passed by name.
   *
   * Known limitations, where the wart deliberately stays silent to avoid false positives: calls that rely on default
   * argument values (the compiler fills omitted arguments positionally, with no source span of their own, so such calls
@@ -78,6 +79,11 @@ object NamedArguments extends WartTraverser {
         }
       }
 
+      // Java bytecode does not keep parameter names, so the arguments of a Java defined method or constructor cannot be
+      // passed by name and the call could never satisfy the wart.
+      private def isJavaDefined(sym: Symbol): Boolean =
+        sym.flags.is(Flags.JavaDefined) || (sym.isClassConstructor && sym.owner.flags.is(Flags.JavaDefined))
+
       private def isSymbolicOrOperator(name: String): Boolean =
         name != "<init>" && name.headOption.exists(c => !(c.isLetter || c == '_'))
 
@@ -101,6 +107,7 @@ object NamedArguments extends WartTraverser {
 
         if (name.isEmpty || isSymbolicOrOperator(name)) false
         else if (isStandardLibraryOwner(sym)) false
+        else if (isJavaDefined(sym)) false
         else if (usesDefaultArguments(fun, args)) false
         else
           fun.tpe.widen match {
