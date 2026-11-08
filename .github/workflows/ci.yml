@@ -13,10 +13,20 @@ jobs:
 
     steps:
       - name: checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v7
 
-      - name: Setup Scala
-        uses: japgolly/setup-everything-scala@v1.0
+      - name: Setup JDK
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      # jvm: system reuses the JDK above so coursier never fetches its flaky JVM index.
+      - name: Setup sbt
+        uses: coursier/setup-action@v3
+        with:
+          jvm: system
+          apps: sbt
 
       - name: Check code format
         run: sbt scalafmtCheckAll
