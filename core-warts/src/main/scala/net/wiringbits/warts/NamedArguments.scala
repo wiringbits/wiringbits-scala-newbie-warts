@@ -21,8 +21,10 @@ import org.wartremover.{WartTraverser, WartUniverse}
   *
   * Known limitations, where the wart deliberately stays silent to avoid false positives: calls that rely on default
   * argument values (the compiler fills omitted arguments positionally with references to synthetic default getters, so
-  * such calls are skipped). Overloads are handled correctly because the resolved method type is inspected. Each
-  * parameter list of a curried or multi parameter list method is checked independently.
+  * such calls are skipped). Calls inside compiler generated methods, such as the apply and copy of a case class with
+  * same typed fields, are skipped too, while user written calls to those methods are still checked. Overloads are
+  * handled correctly because the resolved method type is inspected. Each parameter list of a curried or multi parameter
+  * list method is checked independently.
   */
 object NamedArguments extends WartTraverser {
   private[warts] val message =
@@ -74,6 +76,20 @@ object NamedArguments extends WartTraverser {
       private def isSymbolicOrOperator(name: String): Boolean =
         name != "<init>" && name.headOption.exists(c => !(c.isLetter || c == '_'))
 
+      // Calls inside compiler generated methods, such as the apply and copy of a case class, cannot be fixed by the
+      // user. Anonymous functions and vals are synthetic too but hold user code, so the nearest enclosing method that
+      // is not an anonymous function decides. Default getters are synthetic but their bodies are user written.
+      private def isInsideSyntheticMethod(owner: Symbol): Boolean = {
+        @annotation.tailrec
+        def loop(sym: Symbol): Boolean =
+          if (sym.isNoSymbol || sym.isClassDef) false
+          else if (sym.isDefDef && !sym.isAnonymousFunction)
+            sym.flags.is(Flags.Synthetic) && !sym.name.contains("$default$")
+          else loop(sym.maybeOwner)
+
+        loop(owner)
+      }
+
       private def shouldWarn(fun: Term, args: List[Term]): Boolean = {
         val sym = fun.symbol
         val name = sym.name
@@ -99,7 +115,7 @@ object NamedArguments extends WartTraverser {
         tree match {
           case _ if hasWartAnnotation(tree) => ()
           case Apply(fun, args) =>
-            if (shouldWarn(fun, args)) error(tree.pos, message)
+            if (!isInsideSyntheticMethod(owner) && shouldWarn(fun, args)) error(tree.pos, message)
             super.traverseTree(tree)(owner)
           case _ =>
             super.traverseTree(tree)(owner)
