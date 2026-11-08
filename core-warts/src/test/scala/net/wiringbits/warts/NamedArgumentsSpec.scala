@@ -157,6 +157,46 @@ class NamedArgumentsSpec extends AnyFunSuite with CustomAssertions {
     assertErrors(result)(errorMessage, 1)
   }
 
+  test("same typed parameters supplied only through default values are not flagged") {
+    val result = WartTestTraverser(NamedArguments) {
+      final case class Widget(child: String, margin: Int = 0, padding: Int = 0)
+      def transfer(amount: Int, fromAccount: Int, toAccount: Int = 0): Unit = ()
+      Widget(child = "hello")
+      Widget(child = "hello", margin = 4)
+      transfer(amount = 10, fromAccount = 1)
+    }
+    assertEmpty(result)
+  }
+
+  test("same typed parameters supplied through default values are not flagged when named arguments are reordered") {
+    val result = WartTestTraverser(NamedArguments) {
+      final case class Widget(child: String, margin: Int = 0, padding: Int = 0)
+      def transfer(amount: Int, fromAccount: Int, toAccount: Int = 0): Unit = ()
+      def n(): Int = 1
+      Widget(margin = 4, child = "hello")
+      Widget(margin = n(), child = "hello")
+      transfer(fromAccount = n(), amount = n())
+    }
+    assertEmpty(result)
+  }
+
+  test("same typed arguments passed positionally to a method with default values are flagged") {
+    val result = WartTestTraverser(NamedArguments) {
+      final case class Widget(child: String, margin: Int = 0, padding: Int = 0)
+      Widget("hello", 4, 8)
+    }
+    assertErrors(result)(errorMessage, 1)
+  }
+
+  test("same typed arguments passed positionally without default values are flagged unless named") {
+    val result = WartTestTraverser(NamedArguments) {
+      def transfer(amount: Int, fromAccount: Int, toAccount: Int): Unit = ()
+      transfer(10, 1, 2)
+      transfer(amount = 10, fromAccount = 1, toAccount = 2)
+    }
+    assertErrors(result)(errorMessage, 1)
+  }
+
   test("obeys SuppressWarnings") {
     val result = WartTestTraverser(NamedArguments) {
       @SuppressWarnings(Array("net.wiringbits.warts.NamedArguments"))
