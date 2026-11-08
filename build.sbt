@@ -48,10 +48,35 @@ lazy val coreWarts = project
     name := "core-warts"
   )
 
+lazy val layeringWarts = project
+  .in(file("layering-warts"))
+  .settings(
+    commonSettings,
+    name := "layering-warts",
+    libraryDependencies ++= Seq(
+      "com.typesafe" % "config" % "1.4.10"
+    )
+  )
+
+// WartTestTraverser loads the wart under test by class name while the spec compiles, so wart fixtures carrying an
+// inline config must be compiled before the specs that use them: they live in this module's main sources.
+lazy val layeringWartsTests = project
+  .in(file("layering-warts-tests"))
+  .dependsOn(layeringWarts)
+  .settings(
+    commonSettings,
+    name := "layering-warts-tests",
+    publish := {},
+    publishLocal := {},
+    publish / skip := true
+  )
+
 lazy val root = (project in file("."))
   .aggregate(
     catsEffectWarts,
-    coreWarts
+    coreWarts,
+    layeringWarts,
+    layeringWartsTests
   )
   .settings(
     name := "wiringbits-scala-warts",
