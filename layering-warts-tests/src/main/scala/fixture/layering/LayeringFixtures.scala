@@ -3,45 +3,21 @@ package fixture.layering
 import net.wiringbits.warts.LayeringTraverser
 import net.wiringbits.warts.layering.LayeringConfig
 
-import java.nio.file.Paths
+import java.nio.file.{Path, Paths}
 
-/** Layering warts with an inline config, they must be compiled before the specs that run them. */
-object LayeringFixture extends LayeringTraverser {
-  override protected lazy val config: Either[String, LayeringConfig] = LayeringConfig.parse(
-    """modules = [
-      |  {
-      |    match = "/layering-warts-tests/src/test/"
-      |    layers = [
-      |      { name = controllers,  packages = ["fixture.layering.controllers"] }
-      |      { name = actions,      packages = ["fixture.layering.actions"] }
-      |      { name = repositories, packages = ["fixture.layering.repositories"] }
-      |    ]
-      |    forbidSiblingCalls = [controllers, actions, repositories]
-      |    leaves = ["fixture.layering.models"]
-      |  }
-      |]
-      |""".stripMargin
-  )
-}
+// Layering warts with a tweaked config, they must be compiled before the specs that run them.
 
-object UnmatchedLayeringFixture extends LayeringTraverser {
-  override protected lazy val config: Either[String, LayeringConfig] = LayeringConfig.parse(
-    """modules = [
-      |  {
-      |    match = "/no-such-module/"
-      |    layers = [ { name = actions, packages = ["fixture.layering.actions"] } ]
-      |    forbidSiblingCalls = [actions]
-      |  }
-      |]
-      |""".stripMargin
-  )
+object NoSameFileSiblingsFixture extends LayeringTraverser {
+  override protected def configFor(sourcePath: Path): Either[String, LayeringConfig] =
+    LayeringConfig.forSource(sourcePath).map(_.copy(allowSameFileSiblings = false))
 }
 
 object InvalidLayeringFixture extends LayeringTraverser {
-  override protected lazy val config: Either[String, LayeringConfig] = LayeringConfig.parse("modules = [ { match = ")
+  override protected def configFor(sourcePath: Path): Either[String, LayeringConfig] =
+    LayeringConfig.parse("roots = [ ")
 }
 
 object MissingLayeringFixture extends LayeringTraverser {
-  override protected lazy val config: Either[String, LayeringConfig] =
-    LayeringConfig.load(Paths.get("/no-such-dir", LayeringConfig.FileName))
+  override protected def configFor(sourcePath: Path): Either[String, LayeringConfig] =
+    LayeringConfig.forSource(Paths.get("/no-such-dir/Foo.scala"))
 }
