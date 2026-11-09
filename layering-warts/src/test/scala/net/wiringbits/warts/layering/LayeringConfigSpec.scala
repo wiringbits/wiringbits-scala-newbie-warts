@@ -3,58 +3,65 @@ package net.wiringbits.warts.layering
 import org.scalatest.funsuite.AnyFunSuite
 
 import java.nio.charset.StandardCharsets
-import java.nio.file.Files
+import java.nio.file.{Files, Path}
 
 class LayeringConfigSpec extends AnyFunSuite {
   private val valid =
-    """modules = [
-      |  {
-      |    match = "/server/"
-      |    layers = [ { name = controllers, packages = ["controllers"] } ]
-      |  }
-      |]
+    """roots = ["com.example"]
+      |layers = [ { name = controllers, packages = ["com.example.controllers"], calls = [] } ]
       |""".stripMargin
 
-  test("optional settings default to empty") {
-    val block = LayeringConfig.parse(valid).fold(e => fail(e), identity).modules.head
-    assert(block.forbidSiblingCalls.isEmpty)
-    assert(block.leaves.isEmpty)
+  private def write(path: Path, text: String): Path = {
+    Files.createDirectories(path.getParent)
+    Files.write(path, text.getBytes(StandardCharsets.UTF_8))
   }
 
-  test("a missing file fails naming the expected path and format") {
-    val dir = Files.createTempDirectory("layering")
-    val path = dir.resolve(LayeringConfig.FileName)
-    val result = LayeringConfig.load(path)
-    assert(result.left.exists(_.contains(path.toString)))
-    assert(result.left.exists(_.contains("does not exist")))
+  test("allowSameFileSiblings defaults to true") {
+    assert(LayeringConfig.parse(valid).map(_.allowSameFileSiblings) == Right(true))
+    assert(LayeringConfig.parse(valid + "allowSameFileSiblings = false").map(_.allowSameFileSiblings) == Right(false))
+  }
+
+  test("the nearest config to the source file applies") {
+    val repo = Files.createTempDirectory("layering")
+    write(repo.resolve(LayeringConfig.FileName), valid)
+    val server =
+      write(repo.resolve("server").resolve(LayeringConfig.FileName), valid.replace("com.example", "net.server"))
+    val source = repo.resolve("server/app/controllers/HomeController.scala")
+
+    assert(LayeringConfig.locate(source).contains(server))
+    assert(LayeringConfig.forSource(source).map(_.roots) == Right(List("net.server")))
+    assert(LayeringConfig.forSource(repo.resolve("web/src/Foo.scala")).map(_.roots) == Right(List("com.example")))
+  }
+
+  test("a source without config fails naming where it was looked up and the expected format") {
+    val dir = Files.createTempDirectory("layering").resolve("server/app")
+    val result = LayeringConfig.forSource(dir.resolve("Foo.scala"))
+    assert(result.left.exists(_.contains(s"no ${LayeringConfig.FileName} was found in $dir or its parents")))
     assert(result.left.exists(_.contains(LayeringConfig.ExpectedFormat)))
   }
 
-  test("an existing file is loaded") {
-    val path = Files.createTempDirectory("layering").resolve(LayeringConfig.FileName)
-    Files.write(path, valid.getBytes(StandardCharsets.UTF_8))
-    assert(LayeringConfig.load(path).map(_.modules.map(_.matchPath)) == Right(List("/server/")))
-  }
-
   test("an unparseable file fails naming the path and the expected format") {
-    val path = Files.createTempDirectory("layering").resolve(LayeringConfig.FileName)
-    Files.write(path, "modules = [ { match = ".getBytes(StandardCharsets.UTF_8))
+    val path = write(Files.createTempDirectory("layering").resolve(LayeringConfig.FileName), "roots = [ ")
     val result = LayeringConfig.load(path)
     assert(result.left.exists(_.contains(path.toString)))
     assert(result.left.exists(_.contains("Invalid Layering config")))
     assert(result.left.exists(_.contains(LayeringConfig.ExpectedFormat)))
   }
 
+  private val layerA = """{ name = a, packages = ["x.a"], calls = [] }"""
+
   private val invalidCases = List(
-    "missing modules" -> "foo = 1",
-    "missing match" -> """modules = [ { layers = [ { name = a, packages = ["a"] } ] } ]""",
-    "missing layers" -> """modules = [ { match = "/server/" } ]""",
-    "empty layers" -> """modules = [ { match = "/server/", layers = [] } ]""",
-    "empty match" -> """modules = [ { match = "", layers = [ { name = a, packages = ["a"] } ] } ]""",
-    "layer without packages" -> """modules = [ { match = "/server/", layers = [ { name = a } ] } ]""",
-    "sibling ban on an unknown layer" ->
-      """modules = [ { match = "/server/", layers = [ { name = a, packages = ["a"] } ], forbidSiblingCalls = [b] } ]""",
-    "wrong type" -> """modules = [ { match = "/server/", layers = "controllers" } ]"""
+    "missing roots" -> s"layers = [ $layerA ]",
+    "empty roots" -> s"roots = [], layers = [ $layerA ]",
+    "missing layers" -> """roots = ["x"]""",
+    "empty layers" -> """roots = ["x"], layers = []""",
+    "layer without packages" -> """roots = ["x"], layers = [ { name = a, calls = [] } ]""",
+    "layer without calls" -> """roots = ["x"], layers = [ { name = a, packages = ["x.a"] } ]""",
+    "call to an unknown layer" -> """roots = ["x"], layers = [ { name = a, packages = ["x.a"], calls = [b] } ]""",
+    "duplicated layer names" -> s"""roots = ["x"], layers = [ $layerA, $layerA ]""",
+    "layer package outside the roots" -> """roots = ["x"], layers = [ { name = a, packages = ["y.a"], calls = [] } ]""",
+    "legacy modules format" -> """modules = [ { match = "/server/", layers = [] } ]""",
+    "wrong type" -> """roots = ["x"], layers = "a""""
   )
 
   invalidCases.foreach { case (description, text) =>

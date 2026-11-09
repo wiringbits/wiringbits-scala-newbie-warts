@@ -5,197 +5,172 @@ import org.scalatest.funsuite.AnyFunSuite
 class LayeringRulesSpec extends AnyFunSuite {
   private val config = LayeringConfig
     .parse(
-      """modules = [
-        |  {
-        |    match = "/server/"
-        |    layers = [
-        |      { name = controllers, packages = ["controllers"] }
-        |      { name = actions,      packages = ["net.wiringbits.actions"] }
-        |      { name = repositories, packages = ["net.wiringbits.repositories"] }
-        |      { name = daos,         packages = ["net.wiringbits.repositories.daos"] }
-        |    ]
-        |    forbidSiblingCalls = [controllers, actions, repositories]
-        |    leaves = ["net.wiringbits.models", "net.wiringbits.util"]
-        |  }
-        |  {
-        |    match = "/web/"
-        |    layers = [
-        |      { name = pages,   packages = ["net.wiringbits.components.pages"] }
-        |      { name = widgets, packages = ["net.wiringbits.components.widgets"] }
-        |    ]
-        |    forbidSiblingCalls = [pages]
-        |    leaves = ["net.wiringbits.core"]
-        |  }
-        |  {
-        |    match = "/web/admin/"
-        |    layers = [
-        |      { name = screens, packages = ["net.wiringbits.admin"] }
-        |    ]
-        |  }
+      """roots = ["net.wiringbits", "controllers"]
+        |layers = [
+        |  { name = routing,      packages = ["net.wiringbits.routing"],           calls = [controllers] }
+        |  { name = controllers,  packages = ["controllers"],                      calls = [actions, repositories, shared] }
+        |  { name = actions,      packages = ["net.wiringbits.actions"],           calls = [repositories, shared] }
+        |  { name = repositories, packages = ["net.wiringbits.repositories"],      calls = [daos, shared] }
+        |  { name = daos,         packages = ["net.wiringbits.repositories.daos"], calls = [daos, shared] }
+        |  { name = shared,       packages = ["net.wiringbits.models", "net.wiringbits.repositories.models"], calls = [shared] }
         |]
         |""".stripMargin
     )
     .fold(e => fail(e), identity)
 
-  private val serverPath = "/repo/server/app/controllers/UsersController.scala"
-  private val server = config.selectBlock(serverPath).getOrElse(fail("server block not selected"))
-
   private val ok = None
   private def error(message: String) = Some(LayeringError(message))
 
-  private val serverCases = List(
-    // (description, fromPkg, fromClass, toPkg, toClass, expected)
+  private val actions = "net.wiringbits.actions"
+  private val repositories = "net.wiringbits.repositories"
+  private val daos = "net.wiringbits.repositories.daos"
+  private val models = "net.wiringbits.models"
+
+  private val cases = List(
+    // (description, fromPkg, fromClass, toPkg, toClass, sameFile, expected)
+    ("listed edge", "controllers", "UsersController", actions, "CreateUserAction", false, ok),
     (
-      "controller to sibling controller",
+      "unlisted edge",
+      repositories,
+      "UsersRepository",
+      actions,
+      "CreateUserAction",
+      false,
+      error(
+        "UsersRepository in repositories must not call CreateUserAction in actions; repositories calls daos, shared."
+      )
+    ),
+    ("listed skip", "controllers", "UsersController", repositories, "UsersRepository", false, ok),
+    (
+      "unlisted skip",
       "controllers",
       "UsersController",
-      "controllers",
-      "AdminController",
-      error("UsersController must not call sibling AdminController; shared logic belongs one layer down.")
-    ),
-    ("controller to action", "controllers", "UsersController", "net.wiringbits.actions", "CreateUserAction", ok),
-    (
-      "action to sibling action",
-      "net.wiringbits.actions",
-      "CreateUserAction",
-      "net.wiringbits.actions",
-      "SendEmailAction",
-      error("CreateUserAction must not call sibling SendEmailAction; shared logic belongs one layer down.")
-    ),
-    (
-      "action to repository",
-      "net.wiringbits.actions",
-      "CreateUserAction",
-      "net.wiringbits.repositories",
-      "UsersRepository",
-      ok
-    ),
-    (
-      "repository to sibling repository",
-      "net.wiringbits.repositories",
-      "UsersRepository",
-      "net.wiringbits.repositories",
-      "TokensRepository",
-      error("UsersRepository must not call sibling TokensRepository; shared logic belongs one layer down.")
-    ),
-    (
-      "repository to dao",
-      "net.wiringbits.repositories",
-      "UsersRepository",
-      "net.wiringbits.repositories.daos",
+      daos,
       "UsersDAO",
-      ok
-    ),
-    (
-      "repository to action, upward",
-      "net.wiringbits.repositories",
-      "UsersRepository",
-      "net.wiringbits.actions",
-      "CreateUserAction",
+      false,
       error(
-        "UsersRepository must not call CreateUserAction from the higher layer actions; calls go downward from repositories."
+        "UsersController in controllers must not call UsersDAO in daos; controllers calls actions, repositories, shared."
       )
     ),
     (
-      "dao to repository, upward",
-      "net.wiringbits.repositories.daos",
-      "UsersDAO",
-      "net.wiringbits.repositories",
+      "sibling without self edge",
+      actions,
+      "CreateUserAction",
+      actions,
+      "SendEmailAction",
+      false,
+      error(
+        "CreateUserAction must not call sibling SendEmailAction, actions does not call itself; shared logic belongs in a layer both can call."
+      )
+    ),
+    ("sibling without self edge in the same file", actions, "CreateUserAction", actions, "Request", true, ok),
+    ("sibling with self edge", daos, "UsersDAO", daos, "TokensDAO", false, ok),
+    (
+      "shared calling a controller",
+      models,
+      "User",
+      "controllers",
+      "UsersController",
+      false,
+      error("User in shared must not call UsersController in controllers; shared calls shared.")
+    ),
+    (
+      "an unlisted edge is flagged even in the same file",
+      models,
+      "User",
+      "controllers",
+      "UsersController",
+      true,
+      error("User in shared must not call UsersController in controllers; shared calls shared.")
+    ),
+    (
+      "callee under the roots in no layer",
+      actions,
+      "CreateUserAction",
+      "net.wiringbits.config",
+      "AppConfig",
+      false,
+      error(
+        "CreateUserAction must not call AppConfig, its package net.wiringbits.config belongs to no layer; add it to a layer."
+      )
+    ),
+    (
+      "callee in the root package itself",
+      actions,
+      "CreateUserAction",
+      "net.wiringbits",
+      "Module",
+      false,
+      error("CreateUserAction must not call Module, its package net.wiringbits belongs to no layer; add it to a layer.")
+    ),
+    (
+      "caller under the roots in no layer",
+      "net.wiringbits.tasks",
+      "JobsTask",
+      actions,
+      "CreateUserAction",
+      false,
+      error(
+        "JobsTask must not call CreateUserAction, the caller package net.wiringbits.tasks belongs to no layer; add it to a layer."
+      )
+    ),
+    (
+      "caller under the roots in no layer calling outside the roots",
+      "net.wiringbits.tasks",
+      "JobsTask",
+      "cats.effect",
+      "IO",
+      false,
+      ok
+    ),
+    ("caller outside the roots", "views.html", "index", "controllers", "UsersController", false, ok),
+    ("stdlib", actions, "CreateUserAction", "scala.collection.immutable", "List", false, ok),
+    ("third party", actions, "CreateUserAction", "cats.effect", "IO", false, ok),
+    ("root prefix is matched by segments", actions, "CreateUserAction", "net.wiringbitsx", "Foo", false, ok),
+    (
+      "longest prefix: repositories.models is shared",
+      repositories,
       "UsersRepository",
-      error("UsersDAO must not call UsersRepository from the higher layer repositories; calls go downward from daos.")
-    ),
-    (
-      "dao to sibling dao, daos allow it and are not read as repositories",
-      "net.wiringbits.repositories.daos",
-      "UsersDAO",
-      "net.wiringbits.repositories.daos",
-      "TokensDAO",
+      "net.wiringbits.repositories.models",
+      "UserRow",
+      false,
       ok
     ),
-    ("controller to leaf model", "controllers", "UsersController", "net.wiringbits.models", "User", ok),
+    ("longest prefix: repositories.daos is daos", repositories, "UsersRepository", daos, "UsersDAO", false, ok),
     (
-      "dao to leaf util in a subpackage",
-      "net.wiringbits.repositories.daos",
-      "UsersDAO",
-      "net.wiringbits.util.time",
-      "Clock",
-      ok
+      "a subpackage belongs to its layer",
+      repositories,
+      "UsersRepository",
+      "net.wiringbits.repositories.support",
+      "Helper",
+      false,
+      error(
+        "UsersRepository must not call sibling Helper, repositories does not call itself; shared logic belongs in a layer both can call."
+      )
     ),
+    ("a class and its own companion", actions, "CreateUserAction", actions, "CreateUserAction", false, ok),
+    ("controller to its package object", "controllers", "UsersController", "controllers", "package", false, ok),
+    ("package object to a controller", models, "package", "controllers", "UsersController", false, ok),
+    ("top level definition to a controller", models, "helpers$package", "controllers", "UsersController", false, ok),
     (
-      "a class and its own companion",
-      "net.wiringbits.actions",
-      "CreateUserAction",
-      "net.wiringbits.actions",
-      "CreateUserAction",
-      ok
-    ),
-    ("stdlib from a layer", "net.wiringbits.actions", "CreateUserAction", "scala.collection.immutable", "List", ok),
-    ("third party from a layer", "net.wiringbits.actions", "CreateUserAction", "cats.effect", "IO", ok),
-    ("unlayered code calling a layer upward", "net.wiringbits.models", "User", "controllers", "UsersController", ok),
-    ("package prefix is matched by segments", "controllersExtra", "Foo", "controllersExtra", "Bar", ok),
-    ("controller to its package object", "controllers", "UsersController", "controllers", "package", ok),
-    (
-      "action to the controllers package object",
-      "net.wiringbits.actions",
-      "CreateUserAction",
-      "controllers",
-      "package",
-      ok
-    ),
-    ("package object to a controller", "controllers", "package", "controllers", "UsersController", ok),
-    (
-      "package object to a higher layer",
-      "net.wiringbits.repositories",
-      "package",
+      "controller to a top level definition",
       "controllers",
       "UsersController",
-      ok
-    ),
-    ("controller to a top level definition", "controllers", "UsersController", "controllers", "helpers$package", ok),
-    (
-      "top level definition to a higher layer",
-      "net.wiringbits.actions",
+      "controllers",
       "helpers$package",
-      "controllers",
-      "UsersController",
+      false,
       ok
     )
   )
 
-  serverCases.foreach { case (description, fromPkg, fromClass, toPkg, toClass, expected) =>
-    test(s"server: $description") {
-      assert(LayeringRules.verdict(server, fromPkg, fromClass, toPkg, toClass) == expected)
+  cases.foreach { case (description, fromPkg, fromClass, toPkg, toClass, sameFile, expected) =>
+    test(description) {
+      assert(LayeringRules.verdict(config, fromPkg, fromClass, toPkg, toClass, sameFile) == expected)
     }
   }
 
-  test("a /server/ path selects the server block and a /web/ path the web block") {
-    assert(config.selectBlock("/repo/server/app/Foo.scala").map(_.matchPath).contains("/server/"))
-    assert(config.selectBlock("/repo/web/src/main/scala/Foo.scala").map(_.matchPath).contains("/web/"))
-  }
-
-  test("windows paths are matched with forward slashes") {
-    assert(config.selectBlock("C:\\repo\\server\\app\\Foo.scala").map(_.matchPath).contains("/server/"))
-  }
-
-  test("a path matching no block is unchecked") {
-    assert(config.selectBlock("/repo/lib/src/main/scala/Foo.scala").isEmpty)
-  }
-
-  test("the longest match wins when blocks overlap") {
-    assert(config.selectBlock("/repo/web/admin/Foo.scala").map(_.matchPath).contains("/web/admin/"))
-  }
-
-  test("each block applies its own layer model") {
-    val web = config.selectBlock("/repo/web/src/Foo.scala").getOrElse(fail("web block not selected"))
-    val pages = "net.wiringbits.components.pages"
-    val widgets = "net.wiringbits.components.widgets"
-    assert(
-      LayeringRules.verdict(web, pages, "HomePage", pages, "AboutPage") ==
-        error("HomePage must not call sibling AboutPage; shared logic belongs one layer down.")
-    )
-    assert(LayeringRules.verdict(web, pages, "HomePage", widgets, "Button") == ok)
-    assert(LayeringRules.verdict(web, widgets, "Button", widgets, "Icon") == ok)
-    // the server layers mean nothing to the web block
-    assert(LayeringRules.verdict(web, "net.wiringbits.repositories", "A", "net.wiringbits.repositories", "B") == ok)
+  test("a same file sibling is flagged when allowSameFileSiblings is false") {
+    val strict = config.copy(allowSameFileSiblings = false)
+    assert(LayeringRules.verdict(strict, actions, "CreateUserAction", actions, "Request", sameFile = true).isDefined)
   }
 }
